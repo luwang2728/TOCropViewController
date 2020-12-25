@@ -78,11 +78,7 @@
                                                                   nil)
                      forState:UIControlStateNormal];
     [_doneTextButton setTitleColor:[UIColor colorWithRed:1.0f green:0.8f blue:0.0f alpha:1.0f] forState:UIControlStateNormal];
-    if (@available(iOS 13.0, *)) {
-        [_doneTextButton.titleLabel setFont:[UIFont systemFontOfSize:17.0f weight:UIFontWeightMedium]];
-    } else {
-        [_doneTextButton.titleLabel setFont:[UIFont systemFontOfSize:17.0f]];
-    }
+    [_doneTextButton.titleLabel setFont:[UIFont systemFontOfSize:17.0f]];
     [_doneTextButton addTarget:self action:@selector(buttonTapped:) forControlEvents:UIControlEventTouchUpInside];
     [_doneTextButton sizeToFit];
     [self addSubview:_doneTextButton];
@@ -117,7 +113,7 @@
     [_clampButton setImage:[TOCropToolbar clampImage] forState:UIControlStateNormal];
     [_clampButton addTarget:self action:@selector(buttonTapped:) forControlEvents:UIControlEventTouchUpInside];
     [self addSubview:_clampButton];
-    
+
     _rotateCounterclockwiseButton = [UIButton buttonWithType:UIButtonTypeSystem];
     _rotateCounterclockwiseButton.contentMode = UIViewContentModeCenter;
     _rotateCounterclockwiseButton.tintColor = [UIColor whiteColor];
@@ -148,10 +144,10 @@
     BOOL verticalLayout = (CGRectGetWidth(self.bounds) < CGRectGetHeight(self.bounds));
     CGSize boundsSize = self.bounds.size;
     
-    self.cancelIconButton.hidden = self.cancelButtonHidden || (_showOnlyIcons ? false : !verticalLayout);
-    self.cancelTextButton.hidden = self.cancelButtonHidden || (_showOnlyIcons ? true : verticalLayout);
-    self.doneIconButton.hidden   = self.doneButtonHidden || (_showOnlyIcons ? false : !verticalLayout);
-    self.doneTextButton.hidden   = self.doneButtonHidden || (_showOnlyIcons ? true : verticalLayout);
+    self.cancelIconButton.hidden = (!verticalLayout);
+    self.cancelTextButton.hidden = (verticalLayout);
+    self.doneIconButton.hidden   = (!verticalLayout);
+    self.doneTextButton.hidden   = (verticalLayout);
 
     CGRect frame = self.bounds;
     frame.origin.x -= self.backgroundViewOutsets.left;
@@ -178,7 +174,7 @@
         // Work out the cancel button frame
         CGRect frame = CGRectZero;
         frame.size.height = 44.0f;
-        frame.size.width = _showOnlyIcons ? 44.0f : MIN(self.frame.size.width / 3.0, self.cancelTextButton.frame.size.width);
+        frame.size.width = MIN(self.frame.size.width / 3.0, self.cancelTextButton.frame.size.width);
 
         //If normal layout, place on the left side, else place on the right
         if (self.reverseContentLayout == NO) {
@@ -187,10 +183,10 @@
         else {
             frame.origin.x = boundsSize.width - (frame.size.width + insetPadding);
         }
-        (_showOnlyIcons ? self.cancelIconButton : self.cancelTextButton).frame = frame;
+        self.cancelTextButton.frame = frame;
         
         // Work out the Done button frame
-        frame.size.width = _showOnlyIcons ? 44.0f : MIN(self.frame.size.width / 3.0, self.doneTextButton.frame.size.width);
+        frame.size.width = MIN(self.frame.size.width / 3.0, self.doneTextButton.frame.size.width);
         
         if (self.reverseContentLayout == NO) {
             frame.origin.x = boundsSize.width - (frame.size.width + insetPadding);
@@ -198,17 +194,17 @@
         else {
             frame.origin.x = insetPadding;
         }
-        (_showOnlyIcons ? self.doneIconButton : self.doneTextButton).frame = frame;
+        self.doneTextButton.frame = frame;
         
         // Work out the frame between the two buttons where we can layout our action buttons
-        CGFloat x = self.reverseContentLayout ? CGRectGetMaxX((_showOnlyIcons ? self.doneIconButton : self.doneTextButton).frame) : CGRectGetMaxX((_showOnlyIcons ? self.cancelIconButton : self.cancelTextButton).frame);
+        CGFloat x = self.reverseContentLayout ? CGRectGetMaxX(self.doneTextButton.frame) : CGRectGetMaxX(self.cancelTextButton.frame);
         CGFloat width = 0.0f;
         
         if (self.reverseContentLayout == NO) {
-            width = CGRectGetMinX((_showOnlyIcons ? self.doneIconButton : self.doneTextButton).frame) - CGRectGetMaxX((_showOnlyIcons ? self.cancelIconButton : self.cancelTextButton).frame);
+            width = CGRectGetMinX(self.doneTextButton.frame) - CGRectGetMaxX(self.cancelTextButton.frame);
         }
         else {
-            width = CGRectGetMinX((_showOnlyIcons ? self.cancelIconButton : self.cancelTextButton).frame) - CGRectGetMaxX((_showOnlyIcons ? self.doneIconButton : self.doneTextButton).frame);
+            width = CGRectGetMinX(self.cancelTextButton.frame) - CGRectGetMaxX(self.doneTextButton.frame);
         }
         
         CGRect containerRect = CGRectIntegral((CGRect){x,frame.origin.y,width,44.0f});
@@ -288,16 +284,12 @@
         CGFloat padding = (maxLength - fixedSize * count) / (count + 1);
         
         for (NSInteger i = 0; i < count; i++) {
-            UIButton *button = buttons[i];
+            UIView *button = buttons[i];
             CGFloat sameOffset = horizontally ? fabs(CGRectGetHeight(containerRect)-CGRectGetHeight(button.bounds)) : fabs(CGRectGetWidth(containerRect)-CGRectGetWidth(button.bounds));
             CGFloat diffOffset = padding + i * (fixedSize + padding);
             CGPoint origin = horizontally ? CGPointMake(diffOffset, sameOffset) : CGPointMake(sameOffset, diffOffset);
             if (horizontally) {
                 origin.x += CGRectGetMinX(containerRect);
-                if (@available(iOS 13.0, *)) {
-                    UIImage *image = button.imageView.image;
-                    button.imageEdgeInsets = UIEdgeInsetsMake(0, 0, image.baselineOffsetFromBottom, 0);
-                }
             } else {
                 origin.y += CGRectGetMinY(containerRect);
             }
@@ -376,38 +368,12 @@
     self.resetButton.enabled = resetButtonEnabled;
 }
 
-- (void)setDoneButtonHidden:(BOOL)doneButtonHidden {
-    if (_doneButtonHidden == doneButtonHidden)
-        return;
-    
-    _doneButtonHidden = doneButtonHidden;
-    [self setNeedsLayout];
-}
-
-- (void)setCancelButtonHidden:(BOOL)cancelButtonHidden {
-    if (_cancelButtonHidden == cancelButtonHidden)
-        return;
-    
-    _cancelButtonHidden = cancelButtonHidden;
-    [self setNeedsLayout];
-}
-
 - (CGRect)doneButtonFrame
 {
     if (self.doneIconButton.hidden == NO)
         return self.doneIconButton.frame;
     
     return self.doneTextButton.frame;
-}
-
-- (void)setShowOnlyIcons:(BOOL)showOnlyIcons {
-    if (_showOnlyIcons == showOnlyIcons)
-        return;
-
-    _showOnlyIcons = showOnlyIcons;
-    [_doneIconButton sizeToFit];
-    [_cancelIconButton sizeToFit];
-    [self setNeedsLayout];
 }
 
 - (void)setCancelTextButtonTitle:(NSString *)cancelTextButtonTitle {
@@ -422,28 +388,9 @@
     [_doneTextButton sizeToFit];
 }
 
-- (void)setCancelButtonColor:(UIColor *)cancelButtonColor {
-    _cancelButtonColor = cancelButtonColor;
-    [_cancelTextButton setTitleColor:_cancelButtonColor forState:UIControlStateNormal];
-    [_cancelIconButton setTintColor:_cancelButtonColor];
-    [_cancelTextButton sizeToFit];
-}
-
-- (void)setDoneButtonColor:(UIColor *)doneButtonColor {
-    _doneButtonColor = doneButtonColor;
-    [_doneTextButton setTitleColor:_doneButtonColor forState:UIControlStateNormal];
-    [_doneIconButton setTintColor:_doneButtonColor];
-    [_doneTextButton sizeToFit];
-}
-
 #pragma mark - Image Generation -
 + (UIImage *)doneImage
 {
-    if (@available(iOS 13.0, *)) {
-        return [UIImage systemImageNamed:@"checkmark"
-                       withConfiguration:[UIImageSymbolConfiguration configurationWithWeight:UIImageSymbolWeightSemibold]];
-    }
-
     UIImage *doneImage = nil;
     
     UIGraphicsBeginImageContextWithOptions((CGSize){17,14}, NO, 0.0f);
@@ -467,11 +414,6 @@
 
 + (UIImage *)cancelImage
 {
-    if (@available(iOS 13.0, *)) {
-        return [UIImage systemImageNamed:@"xmark"
-                       withConfiguration:[UIImageSymbolConfiguration configurationWithWeight:UIImageSymbolWeightSemibold]];
-    }
-
     UIImage *cancelImage = nil;
     
     UIGraphicsBeginImageContextWithOptions((CGSize){16,16}, NO, 0.0f);
@@ -501,12 +443,6 @@
 
 + (UIImage *)rotateCCWImage
 {
-    if (@available(iOS 13.0, *)) {
-        return [[UIImage systemImageNamed:@"rotate.left.fill"
-                        withConfiguration:[UIImageSymbolConfiguration configurationWithWeight:UIImageSymbolWeightSemibold]]
-                imageWithBaselineOffsetFromBottom:4];
-    }
-
     UIImage *rotateImage = nil;
     
     UIGraphicsBeginImageContextWithOptions((CGSize){18,21}, NO, 0.0f);
@@ -544,12 +480,6 @@
 
 + (UIImage *)rotateCWImage
 {
-    if (@available(iOS 13.0, *)) {
-        return [[UIImage systemImageNamed:@"rotate.right.fill"
-                        withConfiguration:[UIImageSymbolConfiguration configurationWithWeight:UIImageSymbolWeightSemibold]]
-                imageWithBaselineOffsetFromBottom:4];
-    }
-
     UIImage *rotateCCWImage = [self.class rotateCCWImage];
     UIGraphicsBeginImageContextWithOptions(rotateCCWImage.size, NO, rotateCCWImage.scale);
     CGContextRef context = UIGraphicsGetCurrentContext();
@@ -563,12 +493,6 @@
 
 + (UIImage *)resetImage
 {
-    if (@available(iOS 13.0, *)) {
-        return [[UIImage systemImageNamed:@"arrow.counterclockwise"
-                       withConfiguration:[UIImageSymbolConfiguration configurationWithWeight:UIImageSymbolWeightSemibold]]
-                imageWithBaselineOffsetFromBottom:0];;
-    }
-
     UIImage *resetImage = nil;
     
     UIGraphicsBeginImageContextWithOptions((CGSize){22,18}, NO, 0.0f);
@@ -613,12 +537,6 @@
 
 + (UIImage *)clampImage
 {
-    if (@available(iOS 13.0, *)) {
-        return [[UIImage systemImageNamed:@"aspectratio.fill"
-                       withConfiguration:[UIImageSymbolConfiguration configurationWithWeight:UIImageSymbolWeightSemibold]]
-                imageWithBaselineOffsetFromBottom:0];
-    }
-
     UIImage *clampImage = nil;
     
     UIGraphicsBeginImageContextWithOptions((CGSize){22,16}, NO, 0.0f);

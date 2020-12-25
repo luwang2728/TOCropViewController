@@ -286,6 +286,7 @@ The minimum croping aspect ratio. If set, user is prevented from setting croppin
  */
 - (void)moveCroppedContentToCenterAnimated:(BOOL)animated;
 
+- (void)setSimpleRenderModeInTransition:(BOOL)simpleMode;
 @end
 
 NS_ASSUME_NONNULL_END

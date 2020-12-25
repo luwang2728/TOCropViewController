@@ -165,6 +165,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     self.scrollView.showsHorizontalScrollIndicator = NO;
     self.scrollView.showsVerticalScrollIndicator = NO;
     self.scrollView.delegate = self;
+    self.scrollView.decelerationRate = UIScrollViewDecelerationRateFast;
     [self addSubview:self.scrollView];
 
     // Disable smart inset behavior in iOS 11
@@ -177,7 +178,6 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     
     //Background Image View
     self.backgroundImageView = [[UIImageView alloc] initWithImage:self.image];
-    self.backgroundImageView.backgroundColor = [UIColor colorWithWhite:1.0f alpha:1.0f];
     self.backgroundImageView.layer.minificationFilter = kCAFilterTrilinear;
     
     //Background container view
@@ -188,7 +188,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     //Grey transparent overlay view
     self.overlayView = [[UIView alloc] initWithFrame:self.bounds];
     self.overlayView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    self.overlayView.backgroundColor = [self.backgroundColor colorWithAlphaComponent:0.35f];
+    self.overlayView.backgroundColor = [self.backgroundColor colorWithAlphaComponent:0.5f];
     self.overlayView.hidden = NO;
     self.overlayView.userInteractionEnabled = NO;
     [self addSubview:self.overlayView];
@@ -217,7 +217,6 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     [self addSubview:self.foregroundContainerView];
     
     self.foregroundImageView = [[UIImageView alloc] initWithImage:self.image];
-    self.foregroundImageView.backgroundColor =  [UIColor colorWithWhite:1.0f alpha:1.0f];
     self.foregroundImageView.layer.minificationFilter = kCAFilterTrilinear;
     [self.foregroundContainerView addSubview:self.foregroundImageView];
     
@@ -234,6 +233,14 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
         self.circularMaskLayer.path = circlePath.CGPath;
         self.foregroundContainerView.layer.mask = self.circularMaskLayer;
         
+        self.gridOverlayView = [[TOCropOverlayView alloc] initWithFrame:self.foregroundContainerView.frame];
+        self.gridOverlayView.userInteractionEnabled = NO;
+        self.gridOverlayView.gridHidden = YES;
+        self.gridOverlayView.displayHorizontalGridLines = NO;
+        self.gridOverlayView.displayVerticalGridLines = NO;
+        self.gridOverlayView.alpha = 0.0f;
+        [self addSubview:self.gridOverlayView];
+      
         return;
     }
     
@@ -762,6 +769,9 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
 
 - (void)toggleTranslucencyViewVisible:(BOOL)visible
 {
+    if (self.croppingStyle == TOCropViewCroppingStyleCircular) {
+      self.gridOverlayView.alpha = visible ? 0.0f : 1.0f;
+    }
     if (self.dynamicBlurEffect == NO) {
         self.translucencyView.alpha = visible ? 1.0f : 0.0f;
     }
@@ -1396,6 +1406,17 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     [UIView animateWithDuration:0.25f animations:^{
         [self toggleTranslucencyViewVisible:!simpleMode];
     }];
+}
+
+- (void)setSimpleRenderModeInTransition:(BOOL)simpleMode
+{
+    if (simpleMode == _simpleRenderMode)
+        return;
+    
+    _simpleRenderMode = simpleMode;
+    
+    self.editing = NO;
+  
 }
 
 - (void)setAspectRatio:(CGSize)aspectRatio
